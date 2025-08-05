@@ -268,15 +268,18 @@ function solveMath() {
   const question = document.getElementById("question").value.trim();
   const answerDiv = document.getElementById("answer");
 
-  // Coba jawab sebagai soal cerita dulu
+  if (question === "") {
+    answerDiv.innerHTML = "⚠️ Masukkan soal terlebih dahulu.";
+    return;
+  }
+
   const jawabanSoalCerita = jawabSoal(question);
-  if (jawabanSoalCerita) {
+  if (jawabanSoalCerita && !jawabanSoalCerita.startsWith("⚠️")) {
     answerDiv.innerHTML = `<pre>${jawabanSoalCerita}</pre>`;
     return;
   }
 
   try {
-    // Validasi karakter yang diizinkan
     const validInput = /^[0-9+\-*/^().\s:\u221a\w,%]+$/;
     if (!validInput.test(question)) {
       answerDiv.innerHTML = "⚠️ Input tidak valid. Gunakan angka & simbol operasi yang benar.";
@@ -284,11 +287,8 @@ function solveMath() {
     }
 
     let steps = `Soal: ${question}\n`;
-
-    // Ganti ":" menjadi "/"
     let formatted = question.replace(/:/g, "/");
 
-    // Konversi derajat ke radian
     formatted = formatted.replace(/(sin|cos|tan)\s*\(\s*([\d.]+)\s*deg\s*\)/gi, (_, func, deg) => {
       const radian = (Number(deg) * Math.PI) / 180;
       const result = Math[func](radian).toFixed(4);
@@ -296,44 +296,36 @@ function solveMath() {
       return result;
     });
 
-    // Trigonometri (radian langsung)
     formatted = formatted.replace(/(sin|cos|tan)\s*\(([^()]+)\)/gi, (_, func, val) => {
-      const evaluated = eval(val);
+      const evaluated = math.evaluate(val);
       const result = Math[func](evaluated).toFixed(4);
       steps += `Langkah: ${func}(${evaluated}) = ${result}\n`;
       return result;
     });
 
-    // Akar kuadrat
     formatted = formatted.replace(/sqrt\s*\(([^()]+)\)/gi, (_, val) => {
-      const res = Math.sqrt(Number(eval(val)));
+      const res = Math.sqrt(Number(math.evaluate(val)));
       steps += `Langkah: Akar → sqrt(${val}) = ${res}\n`;
       return res;
     });
 
-    // Pangkat: 3^2
-    const powerRegex = /(\d+)\s*\^\s*(\d+)/g;
-    formatted = formatted.replace(powerRegex, (_, base, exp) => {
+    formatted = formatted.replace(/(\d+)\s*\^\s*(\d+)/g, (_, base, exp) => {
       const res = Math.pow(Number(base), Number(exp));
       steps += `Langkah: Pangkat → ${base}^${exp} = ${res}\n`;
       return res;
     });
 
-    // Evaluasi hasil akhir
-    const result = eval(formatted);
+    const result = math.evaluate(formatted);
     steps += `✅ Hasil: ${result}`;
-
     answerDiv.innerHTML = `<pre>${steps}</pre>`;
   } catch (err) {
     answerDiv.innerHTML = "❌ Terjadi kesalahan saat menghitung. Periksa input.";
   }
 }
 
-// Fungsi: Tampilkan semua rumus dari rumus.js
 function tampilkanRumus(rumusArray) {
   const container = document.getElementById("rumusList");
   container.innerHTML = "";
-
   rumusArray.forEach((item) => {
     const div = document.createElement("div");
     div.className = "rumus";
@@ -347,7 +339,6 @@ function tampilkanRumus(rumusArray) {
   });
 }
 
-// Fungsi: Cari rumus berdasarkan keyword
 document.getElementById("searchRumus").addEventListener("input", function () {
   const keyword = this.value.toLowerCase();
   const hasilFilter = rumusMatematika.filter((item) =>
@@ -358,7 +349,6 @@ document.getElementById("searchRumus").addEventListener("input", function () {
   tampilkanRumus(hasilFilter);
 });
 
-// Saat halaman pertama kali dimuat, tampilkan semua rumus
 document.addEventListener("DOMContentLoaded", function () {
   tampilkanRumus(rumusMatematika);
 });
